@@ -27,28 +27,35 @@ app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 Mo max
 db_path = os.path.join(dossier_bdd, "reseau_social_v4.db")
 
 
-# --- FILTRES JINJA ---
+# --- FILTRE JINJA ULTRA SÉCURISÉ (Ne plante jamais) ---
 @app.template_filter("temps_relatif")
 def temps_relatif(date_str):
+    if not date_str:
+        return ""
     try:
-        date_pub = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-    except ValueError:
+        date_pub = datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S")
+    except Exception:
         try:
-            date_pub = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S.%f")
-        except ValueError:
-            return date_str
-    secondes = int((datetime.now() - date_pub).total_seconds())
-    if secondes < 60: return "À l'instant"
-    elif secondes < 3600: return f"Il y a {secondes // 60} min"
-    elif secondes < 86400: return f"Il y a {secondes // 3600}h"
-    elif secondes < 604800: return f"Il y a {secondes // 86400}j"
-    else: return date_pub.strftime("%d/%m/%Y")
+            date_pub = datetime.strptime(str(date_str), "%Y-%m-%d %H:%M:%S.%f")
+        except Exception:
+            return str(date_str)
+    
+    try:
+        secondes = int((datetime.now() - date_pub).total_seconds())
+        if secondes < 60: return "À l'instant"
+        elif secondes < 3600: return f"Il y a {secondes // 60} min"
+        elif secondes < 86400: return f"Il y a {secondes // 3600}h"
+        elif secondes < 604800: return f"Il y a {secondes // 86400}j"
+        else: return date_pub.strftime("%d/%m/%Y")
+    except Exception:
+        return str(date_str)
 
 
 @app.template_filter("hashtags")
 def hashtags_filter(texte):
-    import re
-    mots = texte.split()
+    if not texte:
+        return ""
+    mots = str(texte).split()
     resultat = []
     for mot in mots:
         if mot.startswith("#") and len(mot) > 1:
@@ -59,7 +66,7 @@ def hashtags_filter(texte):
     return " ".join(resultat)
 
 
-# --- INITIALISATION BDD (8 tables) ---
+# --- INITIALISATION BDD ---
 def initialiser_bdd():
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
@@ -126,20 +133,24 @@ initialiser_bdd()
 def creer_notification(destinataire, expediteur, type_notif, message_id=0):
     if destinataire == expediteur:
         return
-    conn = sqlite3.connect(db_path)
-    conn.execute("INSERT INTO notifications (destinataire, expediteur, type, message_id) VALUES (?,?,?,?)",
-                 (destinataire, expediteur, type_notif, message_id))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO notifications (destinataire, expediteur, type, message_id) VALUES (?,?,?,?)",
+                     (destinataire, expediteur, type_notif, message_id))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# --- ROUTE PRINCIPALE : FIL D'ACTUALITÉ + PAGINATION + RECHERCHE ---
+# --- ROUTE PRINCIPALE ---
 @app.route("/", methods=["GET", "POST"])
 def fil_actualite():
+    initialiser_bdd()
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     pseudo_connecte = session.get("utilisateur")
@@ -169,7 +180,6 @@ def fil_actualite():
         conn.close()
         return redirect("/")
 
-    # Pagination
     page = request.args.get("page", 1, type=int)
     par_page = 10
     offset = (page - 1) * par_page
@@ -186,7 +196,6 @@ def fil_actualite():
     for msg in lignes:
         msg_id, auteur, contenu, image, epingle, date_pub = msg
 
-        # Réactions
         c.execute("SELECT type, COUNT(*) FROM reactions WHERE message_id=? GROUP BY type", (msg_id,))
         reactions = dict(c.fetchall())
         total_reactions = sum(reactions.values())
@@ -197,7 +206,6 @@ def fil_actualite():
             r = c.fetchone()
             if r: ma_reaction = r[0]
 
-        # Commentaires
         c.execute("SELECT auteur, contenu, date_commentaire FROM commentaires WHERE message_id=? ORDER BY id ASC", (msg_id,))
         commentaires = c.fetchall()
 
@@ -236,7 +244,6 @@ def react(message_id, emoji):
             c.execute("UPDATE reactions SET type=? WHERE message_id=? AND pseudo=?", (emoji, message_id, pseudo))
     else:
         c.execute("INSERT INTO reactions (message_id, pseudo, type) VALUES (?,?,?)", (message_id, pseudo, emoji))
-        # Notification
         c.execute("SELECT auteur FROM messages WHERE id=?", (message_id,))
         auteur_msg = c.fetchone()
         if auteur_msg:

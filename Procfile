@@ -1,0 +1,1 @@
+web: gunicorn app_reseau_social:app

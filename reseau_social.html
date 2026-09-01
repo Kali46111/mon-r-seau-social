@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="{{ session.get('theme', 'light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroBlog Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        [data-bs-theme="dark"] body { background-color: #18191a; }
+        [data-bs-theme="dark"] .card { background-color: #242526; border-color: #3a3b3c; }
+        [data-bs-theme="dark"] .text-muted { color: #b0b3b8 !important; }
+        .avatar { width:42px;height:42px;border-radius:50%; }
+        .avatar-sm { width:32px;height:32px;border-radius:50%; }
+        .card { border:none;border-radius:12px; }
+        .btn-react { font-size:18px;padding:2px 8px;border-radius:20px;border:1px solid #ddd;background:transparent;cursor:pointer; }
+        .btn-react.actif { background:#e7f3ff;border-color:#1877f2; }
+        .comm-item { background:#f0f2f5;padding:8px 12px;border-radius:18px;margin-bottom:6px;font-size:13px; }
+        [data-bs-theme="dark"] .comm-item { background:#3a3b3c; }
+        .msg-image { max-width:100%;border-radius:10px;margin-top:10px; }
+        .badge-notif { position:absolute;top:-5px;right:-5px;font-size:10px; }
+        .profil-link { text-decoration:none;font-weight:600; }
+        .epingle-badge { color:#f59e0b;font-size:12px; }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg sticky-top {% if session.get('theme')=='dark' %}navbar-dark bg-dark{% else %}navbar-dark bg-primary{% endif %}">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">💬 MicroBlog</a>
+            <form action="/recherche" method="GET" class="d-none d-md-flex mx-3" style="max-width:250px;">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="🔍 Rechercher...">
+            </form>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/toggle_theme" class="btn btn-sm btn-outline-light" title="Changer le thème">
+                    {% if session.get('theme')=='dark' %}☀️{% else %}🌙{% endif %}
+                </a>
+                {% if utilisateur_connecte %}
+                    <a href="/notifications" class="btn btn-sm btn-outline-light position-relative">
+                        🔔
+                    </a>
+                    <a href="/messages" class="btn btn-sm btn-outline-light">💬</a>
+                    <a href="/dashboard" class="btn btn-sm btn-outline-light">📊</a>
+                    <a href="/profil/{{ utilisateur_connecte }}" class="text-white text-decoration-none d-flex align-items-center gap-1">
+                        <img src="https://ui-avatars.com/api/?name={{ utilisateur_connecte }}&background=fff&color=1877f2&size=28" class="avatar-sm">
+                        <span class="d-none d-lg-inline">{{ utilisateur_connecte }}</span>
+                    </a>
+                    <a href="/deconnexion" class="btn btn-outline-light btn-sm">🚪</a>
+                {% else %}
+                    <a href="/connexion" class="btn btn-light btn-sm">Connexion</a>
+                    <a href="/inscription" class="btn btn-success btn-sm">Inscription</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4" style="max-width:650px;">
+        <!-- FLASH -->
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+            {% for cat, msg in msgs %}
+                <div class="alert alert-{{ cat }} alert-dismissible fade show py-2">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            {% endfor %}
+        {% endwith %}
+
+        <!-- RECHERCHE MOBILE -->
+        <form action="/recherche" method="GET" class="d-md-none mb-3">
+            <input type="text" name="q" class="form-control" placeholder="🔍 Rechercher messages, #hashtags, utilisateurs...">
+        </form>
+
+        <!-- PUBLIER -->
+        {% if utilisateur_connecte %}
+        <div class="card mb-4 p-3">
+            <form method="POST" action="/" enctype="multipart/form-data">
+                <div class="d-flex gap-3">
+                    <img src="https://ui-avatars.com/api/?name={{ utilisateur_connecte }}&background=1877f2&color=fff&size=42" class="avatar">
+                    <div class="flex-grow-1">
+                        <textarea name="message" class="form-control mb-2" rows="2" placeholder="Quoi de neuf ? #partage" maxlength="500"></textarea>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-2">
+                                <label class="btn btn-sm btn-outline-secondary mb-0">📸 Photo
+                                    <input type="file" name="image" accept="image/*" hidden>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm fw-bold">Publier 🚀</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- MESSAGES -->
+        {% for msg in messages %}
+        <div class="card mb-3 p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <img src="https://ui-avatars.com/api/?name={{ msg.auteur }}&background=random&color=fff&size=42" class="avatar">
+                <div>
+                    <a href="/profil/{{ msg.auteur }}" class="profil-link text-primary">{{ msg.auteur }}</a>
+                    {% if msg.epingle %}<span class="epingle-badge">📌 Épinglé</span>{% endif %}
+                    <br><small class="text-muted">{{ msg.date | temps_relatif }}</small>
+                </div>
+                <div class="ms-auto">
+                    {% if utilisateur_connecte == msg.auteur %}
+                        <a href="/epingle/{{ msg.id }}" class="text-warning text-decoration-none me-1" title="Épingler">📌</a>
+                        <a href="/modifier/{{ msg.id }}" class="text-info text-decoration-none me-1" title="Modifier">✏️</a>
+                        <a href="/supprimer/{{ msg.id }}" class="text-danger text-decoration-none" title="Supprimer">🗑️</a>
+                    {% endif %}
+                </div>
+            </div>
+            <p class="mb-2" style="white-space:pre-wrap;">{{ msg.contenu | hashtags | safe }}</p>
+            {% if msg.image %}
+                <img src="/static/uploads/{{ msg.image }}" class="msg-image" alt="photo">
+            {% endif %}
+
+            <!-- RÉACTIONS -->
+            <div class="d-flex gap-1 border-top pt-2 mt-2 flex-wrap">
+                {% for emoji in ["❤️","👍","😂","😮","😢","🔥"] %}
+                    <a href="/react/{{ msg.id }}/{{ emoji }}" class="btn-react {% if msg.ma_reaction == emoji %}actif{% endif %}">
+                        {{ emoji }} <small>{{ msg.reactions.get(emoji, '') }}</small>
+                    </a>
+                {% endfor %}
+                <span class="ms-auto text-muted" style="font-size:13px;">💬 {{ msg.commentaires | length }}</span>
+            </div>
+
+            <!-- COMMENTAIRES -->
+            {% if msg.commentaires %}
+            <div class="mt-2">
+                {% for comm in msg.commentaires %}
+                <div class="comm-item d-flex gap-2">
+                    <img src="https://ui-avatars.com/api/?name={{ comm[0] }}&size=24" class="avatar-sm" style="width:24px;height:24px;">
+                    <div><a href="/profil/{{ comm[0] }}" class="profil-link text-primary" style="font-size:12px;">{{ comm[0] }}</a> <small class="text-muted">{{ comm[2] | temps_relatif }}</small><div>{{ comm[1] }}</div></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if utilisateur_connecte %}
+            <form method="POST" action="/commenter/{{ msg.id }}" class="d-flex gap-2 mt-2">
+                <input type="text" name="commentaire" class="form-control form-control-sm" style="border-radius:20px;" placeholder="Commenter..." required>
+                <button class="btn btn-primary btn-sm" style="border-radius:20px;">💬</button>
+            </form>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="text-center text-muted py-5">Aucun message. Sois le premier ! ✍️</p>
+        {% endfor %}
+
+        <!-- PAGINATION -->
+        {% if total_pages > 1 %}
+        <nav class="d-flex justify-content-center gap-2 mt-4">
+            {% if page > 1 %}<a href="/?page={{ page-1 }}" class="btn btn-outline-primary btn-sm">⬅️ Précédent</a>{% endif %}
+            <span class="btn btn-primary btn-sm disabled">Page {{ page }} / {{ total_pages }}</span>
+            {% if page < total_pages %}<a href="/?page={{ page+1 }}" class="btn btn-outline-primary btn-sm">Suivant ➡️</a>{% endif %}
+        </nav>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

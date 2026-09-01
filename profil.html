@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="{{ session.get('theme','light') }}">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Profil {{ profil_utilisateur[0] }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .avatar-xl{width:100px;height:100px;border-radius:50%;border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+        .stat-nombre{font-size:24px;font-weight:bold;color:#1877f2;}
+        .stat-label{font-size:13px;color:#65676b;}
+    </style>
+</head>
+<body class="bg-body">
+    <nav class="navbar navbar-dark bg-primary sticky-top"><div class="container"><a class="navbar-brand fw-bold" href="/">💬 MicroBlog</a><a href="/" class="btn btn-outline-light btn-sm">⬅️ Fil</a></div></nav>
+    <div class="container py-4" style="max-width:650px;">
+        <div class="card text-center p-4 mb-4">
+            <img src="https://ui-avatars.com/api/?name={{ profil_utilisateur[0] }}&background=1877f2&color=fff&size=100" class="avatar-xl mx-auto mb-3">
+            <h3 class="fw-bold">{{ profil_utilisateur[0] }}</h3>
+            <p class="text-muted">{{ profil_utilisateur[1] or 'Aucune bio' }} · Membre depuis {{ profil_utilisateur[2] | temps_relatif }}</p>
+            {% if utilisateur_connecte and utilisateur_connecte != profil_utilisateur[0] %}
+                <a href="/follow/{{ profil_utilisateur[0] }}" class="btn {% if est_follow %}btn-outline-secondary{% else %}btn-primary{% endif %} btn-sm">
+                    {% if est_follow %}Ne plus suivre{% else %}👥 Suivre{% endif %}
+                </a>
+                <a href="/messages/{{ profil_utilisateur[0] }}" class="btn btn-outline-primary btn-sm">💬 Message</a>
+            {% endif %}
+            <div class="row mt-3">
+                <div class="col-3"><div class="stat-nombre">{{ total_messages }}</div><div class="stat-label">Posts</div></div>
+                <div class="col-3"><div class="stat-nombre">{{ nb_followers }}</div><div class="stat-label">Followers</div></div>
+                <div class="col-3"><div class="stat-nombre">{{ nb_following }}</div><div class="stat-label">Following</div></div>
+                <div class="col-3"><div class="stat-nombre">{{ total_reactions }}</div><div class="stat-label">Réactions</div></div>
+            </div>
+        </div>
+        <h5 class="mb-3">📝 Publications</h5>
+        {% for msg in messages %}
+        <div class="card mb-3 p-3">
+            <div class="d-flex gap-2 mb-2">
+                <img src="https://ui-avatars.com/api/?name={{ msg[1] }}&size=36" class="rounded-circle" style="width:36px;height:36px;">
+                <div><strong>{{ msg[1] }}</strong> {% if msg[4] %}<span class="text-warning">📌</span>{% endif %}<br><small class="text-muted">{{ msg[5] | temps_relatif }}</small></div>
+            </div>
+            <p class="mb-1" style="white-space:pre-wrap;">{{ msg[2] | hashtags | safe }}</p>
+            {% if msg[3] %}<img src="/static/uploads/{{ msg[3] }}" class="img-fluid rounded mt-2">{% endif %}
+        </div>
+        {% else %}<p class="text-muted text-center">Aucune publication.</p>{% endfor %}
+    </div>
+</body>
+</html>

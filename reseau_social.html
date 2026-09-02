@@ -20,6 +20,8 @@
         .badge-notif { position:absolute;top:-5px;right:-5px;font-size:10px; }
         .profil-link { text-decoration:none;font-weight:600; }
         .epingle-badge { color:#f59e0b;font-size:12px; }
+        /* Boutons-icônes rendus comme des liens, utilisés dans des <form> POST */
+        .btn-icon-action { border:none;background:transparent;padding:0;line-height:1;font-size:inherit; }
     </style>
 </head>
 <body>
@@ -44,7 +46,10 @@
                         <img src="https://ui-avatars.com/api/?name={{ utilisateur_connecte }}&background=fff&color=1877f2&size=28" class="avatar-sm">
                         <span class="d-none d-lg-inline">{{ utilisateur_connecte }}</span>
                     </a>
-                    <a href="/deconnexion" class="btn btn-outline-light btn-sm">🚪</a>
+                    <form method="POST" action="/deconnexion" class="d-inline m-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-light btn-sm">🚪</button>
+                    </form>
                 {% else %}
                     <a href="/connexion" class="btn btn-light btn-sm">Connexion</a>
                     <a href="/inscription" class="btn btn-success btn-sm">Inscription</a>
@@ -70,6 +75,7 @@
         {% if utilisateur_connecte %}
         <div class="card mb-4 p-3">
             <form method="POST" action="/" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="d-flex gap-3">
                     <img src="https://ui-avatars.com/api/?name={{ utilisateur_connecte }}&background=1877f2&color=fff&size=42" class="avatar">
                     <div class="flex-grow-1">
@@ -98,25 +104,35 @@
                     {% if msg.epingle %}<span class="epingle-badge">📌 Épinglé</span>{% endif %}
                     <br><small class="text-muted">{{ msg.date | temps_relatif }}</small>
                 </div>
-                <div class="ms-auto">
+                <div class="ms-auto d-flex align-items-center gap-1">
                     {% if utilisateur_connecte == msg.auteur %}
-                        <a href="/epingle/{{ msg.id }}" class="text-warning text-decoration-none me-1" title="Épingler">📌</a>
-                        <a href="/modifier/{{ msg.id }}" class="text-info text-decoration-none me-1" title="Modifier">✏️</a>
-                        <a href="/supprimer/{{ msg.id }}" class="text-danger text-decoration-none" title="Supprimer">🗑️</a>
+                        <form method="POST" action="/epingle/{{ msg.id }}" class="d-inline m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-icon-action text-warning" title="Épingler">📌</button>
+                        </form>
+                        <a href="/modifier/{{ msg.id }}" class="text-info text-decoration-none" title="Modifier">✏️</a>
+                        <form method="POST" action="/supprimer/{{ msg.id }}" class="d-inline m-0"
+                              onsubmit="return confirm('Supprimer ce message ?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-icon-action text-danger" title="Supprimer">🗑️</button>
+                        </form>
                     {% endif %}
                 </div>
             </div>
-            <p class="mb-2" style="white-space:pre-wrap;">{{ msg.contenu | hashtags | safe }}</p>
+            <p class="mb-2" style="white-space:pre-wrap;">{{ msg.contenu | hashtags }}</p>
             {% if msg.image %}
                 <img src="/static/uploads/{{ msg.image }}" class="msg-image" alt="photo">
             {% endif %}
 
             <!-- RÉACTIONS -->
-            <div class="d-flex gap-1 border-top pt-2 mt-2 flex-wrap">
+            <div class="d-flex gap-1 border-top pt-2 mt-2 flex-wrap align-items-center">
                 {% for emoji in ["❤️","👍","😂","😮","😢","🔥"] %}
-                    <a href="/react/{{ msg.id }}/{{ emoji }}" class="btn-react {% if msg.ma_reaction == emoji %}actif{% endif %}">
-                        {{ emoji }} <small>{{ msg.reactions.get(emoji, '') }}</small>
-                    </a>
+                    <form method="POST" action="/react/{{ msg.id }}/{{ emoji }}" class="d-inline m-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-react {% if msg.ma_reaction == emoji %}actif{% endif %}">
+                            {{ emoji }} <small>{{ msg.reactions.get(emoji, '') }}</small>
+                        </button>
+                    </form>
                 {% endfor %}
                 <span class="ms-auto text-muted" style="font-size:13px;">💬 {{ msg.commentaires | length }}</span>
             </div>
@@ -134,7 +150,8 @@
             {% endif %}
             {% if utilisateur_connecte %}
             <form method="POST" action="/commenter/{{ msg.id }}" class="d-flex gap-2 mt-2">
-                <input type="text" name="commentaire" class="form-control form-control-sm" style="border-radius:20px;" placeholder="Commenter..." required>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="commentaire" class="form-control form-control-sm" style="border-radius:20px;" placeholder="Commenter..." maxlength="300" required>
                 <button class="btn btn-primary btn-sm" style="border-radius:20px;">💬</button>
             </form>
             {% endif %}

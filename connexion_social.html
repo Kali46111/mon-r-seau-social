@@ -15,8 +15,9 @@
             {% endfor %}
         {% endwith %}
         <form method="POST">
-            <input type="text" name="pseudo" class="form-control mb-2" placeholder="Ton pseudo" required>
-            <input type="password" name="mot_de_passe" class="form-control mb-3" placeholder="Ton mot de passe" required>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="pseudo" class="form-control mb-2" placeholder="Ton pseudo" maxlength="20" autocomplete="username" required>
+            <input type="password" name="mot_de_passe" class="form-control mb-3" placeholder="Ton mot de passe" autocomplete="current-password" required>
             <button type="submit" class="btn btn-primary w-100 fw-bold">Se connecter</button>
         </form>
         <p class="text-center mt-3 mb-0"><a href="/inscription">Pas de compte ? S'inscrire</a></p>

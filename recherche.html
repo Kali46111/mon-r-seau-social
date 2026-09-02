@@ -10,7 +10,7 @@
         <h5>👥 Utilisateurs</h5>
         {% for u in resultats_users %}<a href="/profil/{{ u[0] }}" class="card mb-2 p-3 text-decoration-none text-body d-flex align-items-center gap-2"><img src="https://ui-avatars.com/api/?name={{ u[0] }}&size=32" class="rounded-circle" style="width:32px;height:32px;"><strong>{{ u[0] }}</strong></a>{% else %}<p class="text-muted">Aucun utilisateur trouvé.</p>{% endfor %}
         <h5 class="mt-4">📝 Messages</h5>
-        {% for m in resultats_messages %}<div class="card mb-2 p-3"><strong class="text-primary">{{ m[1] }}</strong> <small class="text-muted">{{ m[4] | temps_relatif }}</small><p class="mb-0">{{ m[2] | hashtags | safe }}</p></div>{% else %}<p class="text-muted">Aucun message trouvé.</p>{% endfor %}
+        {% for m in resultats_messages %}<div class="card mb-2 p-3"><strong class="text-primary">{{ m[1] }}</strong> <small class="text-muted">{{ m[4] | temps_relatif }}</small><p class="mb-0">{{ m[2] | hashtags }}</p></div>{% else %}<p class="text-muted">Aucun message trouvé.</p>{% endfor %}
     {% endif %}
 </div>
 </body></html>

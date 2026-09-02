@@ -17,12 +17,27 @@
             <img src="https://ui-avatars.com/api/?name={{ profil_utilisateur[0] }}&background=1877f2&color=fff&size=100" class="avatar-xl mx-auto mb-3">
             <h3 class="fw-bold">{{ profil_utilisateur[0] }}</h3>
             <p class="text-muted">{{ profil_utilisateur[1] or 'Aucune bio' }} · Membre depuis {{ profil_utilisateur[2] | temps_relatif }}</p>
+
             {% if utilisateur_connecte and utilisateur_connecte != profil_utilisateur[0] %}
-                <a href="/follow/{{ profil_utilisateur[0] }}" class="btn {% if est_follow %}btn-outline-secondary{% else %}btn-primary{% endif %} btn-sm">
-                    {% if est_follow %}Ne plus suivre{% else %}👥 Suivre{% endif %}
-                </a>
-                <a href="/messages/{{ profil_utilisateur[0] }}" class="btn btn-outline-primary btn-sm">💬 Message</a>
+                <div>
+                    <form method="POST" action="/follow/{{ profil_utilisateur[0] }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn {% if est_follow %}btn-outline-secondary{% else %}btn-primary{% endif %} btn-sm">
+                            {% if est_follow %}Ne plus suivre{% else %}👥 Suivre{% endif %}
+                        </button>
+                    </form>
+                    <a href="/messages/{{ profil_utilisateur[0] }}" class="btn btn-outline-primary btn-sm">💬 Message</a>
+                </div>
+            {% elif utilisateur_connecte == profil_utilisateur[0] %}
+                <form method="POST" action="/profil/bio" class="mt-3 text-start mx-auto" style="max-width:400px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="form-label small text-muted mb-1">Ma bio</label>
+                    <textarea name="bio" class="form-control form-control-sm mb-2" rows="2" maxlength="200"
+                              placeholder="Écris une bio...">{{ profil_utilisateur[1] or '' }}</textarea>
+                    <button type="submit" class="btn btn-outline-primary btn-sm">💾 Enregistrer ma bio</button>
+                </form>
             {% endif %}
+
             <div class="row mt-3">
                 <div class="col-3"><div class="stat-nombre">{{ total_messages }}</div><div class="stat-label">Posts</div></div>
                 <div class="col-3"><div class="stat-nombre">{{ nb_followers }}</div><div class="stat-label">Followers</div></div>
@@ -37,7 +52,7 @@
                 <img src="https://ui-avatars.com/api/?name={{ msg[1] }}&size=36" class="rounded-circle" style="width:36px;height:36px;">
                 <div><strong>{{ msg[1] }}</strong> {% if msg[4] %}<span class="text-warning">📌</span>{% endif %}<br><small class="text-muted">{{ msg[5] | temps_relatif }}</small></div>
             </div>
-            <p class="mb-1" style="white-space:pre-wrap;">{{ msg[2] | hashtags | safe }}</p>
+            <p class="mb-1" style="white-space:pre-wrap;">{{ msg[2] | hashtags }}</p>
             {% if msg[3] %}<img src="/static/uploads/{{ msg[3] }}" class="img-fluid rounded mt-2">{% endif %}
         </div>
         {% else %}<p class="text-muted text-center">Aucune publication.</p>{% endfor %}

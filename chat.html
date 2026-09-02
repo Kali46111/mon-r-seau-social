@@ -17,7 +17,8 @@
         {% endfor %}
     </div>
     <form method="POST" class="d-flex gap-2">
-        <input type="text" name="contenu" class="form-control" style="border-radius:20px;" placeholder="Écris un message..." required>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="contenu" class="form-control" style="border-radius:20px;" placeholder="Écris un message..." maxlength="1000" required>
         <button class="btn btn-primary" style="border-radius:20px;">Envoyer</button>
     </form>
 </div>
